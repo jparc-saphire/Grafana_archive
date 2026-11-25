@@ -1,3 +1,4 @@
 /data/
+/device_log/
 __pycache__/
 *.py[cod]

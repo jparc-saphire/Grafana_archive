@@ -1,6 +1,6 @@
 # E88 Grafana Archive
 
-This recorder exports the Prometheus measurements used by the E88 Grafana dashboards to daily ROOT files. It writes one entry per minute while the recording session is running.
+This recorder exports the Prometheus measurements used by the E88 Grafana dashboards to daily ROOT files and the device operation history to daily CSV files. The ROOT tree receives one entry per minute during a recording session.
 
 ## Start, check, and stop a recording
 
@@ -12,11 +12,46 @@ cd /e88/u/e88daq/slow_control/Grafana_archive
 
 | Action | Command |
 | --- | --- |
-| Start recording in a dedicated tmux session | `python3 start.py` |
-| Check whether the recorder is running, find the latest file, and see recent log messages | `python3 status.py` |
-| Stop the recorder | `python3 kill.py` |
+| Start both recorders in one tmux session | `python3 start.py` |
+| Check both recorders, find the latest files, and see recent log messages | `python3 status.py` |
+| Stop both recorders | `python3 kill.py` |
 
-The first entry uses the next minute boundary as its timestamp. Use the attach command printed by `start.py` or `status.py` to view the tmux session. Press `Ctrl+B`, then `D`, to detach and keep recording. The recorder retries failed requests during the active session. A new session starts at its own minute boundary, leaving gaps between sessions in the archive.
+The first ROOT entry uses the next minute boundary as its timestamp. Use the attach command printed by `start.py` or `status.py` to view both tmux panes. Press `Ctrl+B`, then `D`, to detach and keep recording. Both recorders retry failed requests during the active session. Gaps between sessions are preserved in the archive.
+
+The **ROOT Archive** panel in Grafana uses the `e88_grafana_archive_recording` gauge from `python3 status.py --prometheus` to show the ROOT recorder state.
+
+## Device operation history
+
+CSV files are written to `device_log/Grafana_device_YYYYMMDD.csv`, for example `device_log/Grafana_device_20261125.csv`. The file date is the operation date in Japan Standard Time. The recorder polls the **Operations** audit API about every two seconds over the existing non-interactive SSH connection to the monitoring VM.
+
+Each operation gets one row. A later confirmation or failure updates that row in the original file, including when the result arrives after midnight. When an operation is in progress, its row shows the latest phase reported by Operations.
+
+| Column | Meaning |
+| --- | --- |
+| `unix_time` | Time of the first available audit event for the operation, in Unix seconds with fractional precision when available |
+| `time_jst` | The same time in JST as an ISO 8601 timestamp with `+09:00` |
+| `device`, `action` | Device identifier and operation name, such as `set_voltage` or `turn_on` |
+| `value` | Requested setting or settings encoded as JSON |
+| `result`, `confirmed` | Latest phase and the `true` or `false` confirmation flag reported by Operations |
+| `result_time_jst` | Time of the latest phase in JST |
+| `revision` | Device revision reported with the operation |
+| `error` | Error type when Operations reports one |
+
+The Operations API returns its latest 100 audit events. If a full history window has no overlap with the previous poll, the recorder logs a warning about possible missed events.
+
+### Read a device CSV
+
+From the repository directory, substitute the operation date in this example.
+
+```bash
+python3 - <<'PY'
+import csv
+
+with open("device_log/Grafana_device_20261125.csv", newline="", encoding="utf-8") as source:
+    for row in csv.DictReader(source):
+        print(row["time_jst"], row["device"], row["action"], row["result"])
+PY
+```
 
 ## Output files
 

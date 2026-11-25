@@ -36,4 +36,4 @@ if ! command -v tmux >/dev/null && [[ ! -x $archive_dir/bin/tmux ]]; then
     install -D -m 0755 "$stage/usr/bin/tmux" "$archive_dir/bin/tmux"
 fi
 
-install -m 0644 "$source_dir/archive.py" "$source_dir/metrics.json" "$archive_dir/"
+install -m 0644 "$source_dir/archive.py" "$source_dir/device_log.py" "$source_dir/metrics.json" "$archive_dir/"
