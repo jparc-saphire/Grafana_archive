@@ -1,0 +1,54 @@
+{
+  "series": {
+    "power": {
+      "sc_pmx01_main": {"device": "pmx-70-1A-1", "detector": "SC", "supply": "pmx01", "channel": "main"},
+      "ac_pmx02_main": {"device": "pmx-70-1A-2", "detector": "AC", "supply": "pmx02", "channel": "main"},
+      "mrpc_p4k02_hv": {"device": "matsusadaLV-02", "detector": "MRPC", "supply": "p4k02", "channel": "hv"},
+      "sc_psw01_main": {"device": "psw-360l30-1", "detector": "SC", "supply": "psw01", "channel": "main"},
+      "sc_psw02_main": {"device": "psw-360l30-2", "detector": "SC", "supply": "psw02", "channel": "main"},
+      "ac_psw03_main": {"device": "psw-360l30-3", "detector": "AC", "supply": "psw03", "channel": "main"},
+      "ac_psw04_main": {"device": "psw-360l30-4", "detector": "AC", "supply": "psw04", "channel": "main"},
+      "discri_psw05_main": {"device": "psw-360l30-5", "detector": "DISCRI", "supply": "psw05", "channel": "main"},
+      "discri_psw06_main": {"device": "psw-360l30-6", "detector": "DISCRI", "supply": "psw06", "channel": "main"},
+      "discri_psw07_main": {"device": "psw-360l30-7", "detector": "DISCRI", "supply": "psw07", "channel": "main"}
+    },
+    "host": {
+      "e88evb01": {"instance": "e88evb01"}
+    },
+    "filesystem": {
+      "e88evb01_fs_root": {"instance": "e88evb01", "mountpoint": "/"},
+      "e88evb01_fs_boot": {"instance": "e88evb01", "mountpoint": "/boot"},
+      "e88evb01_fs_boot_efi": {"instance": "e88evb01", "mountpoint": "/boot/efi"},
+      "e88evb01_fs_home": {"instance": "e88evb01", "mountpoint": "/home"},
+      "e88evb01_fs_var": {"instance": "e88evb01", "mountpoint": "/var"},
+      "e88evb01_fs_e88_share": {"instance": "e88evb01", "mountpoint": "/e88/share"},
+      "e88evb01_fs_e88_u": {"instance": "e88evb01", "mountpoint": "/e88/u"},
+      "e88evb01_fs_e88_w": {"instance": "e88evb01", "mountpoint": "/e88/w"},
+      "e88evb01_fs_e88_w_r01": {"instance": "e88evb01", "mountpoint": "/e88/w/r01"}
+    },
+    "zpool": {
+      "e88evb01_zpool_e88pool01": {"instance": "e88evb01", "pool": "e88pool01"}
+    }
+  },
+  "queries": [
+    {"series": "power", "field": "voltage_v", "unit": "V", "expr": "max by (device,detector,channel,supply,type) (e88_power_voltage_measured_volts{job=\"pmx\"} and (e88_power_up{job=\"pmx\"} == 1) and on(job,instance) (up{job=\"pmx\"} == 1))"},
+    {"series": "power", "field": "current_a", "unit": "A", "expr": "max by (device,detector,channel,supply,type) (e88_power_current_measured_amps{job=\"pmx\"} and (e88_power_up{job=\"pmx\"} == 1) and on(job,instance) (up{job=\"pmx\"} == 1))"},
+    {"series": "power", "field": "voltage_set_v", "unit": "V", "expr": "max by (device,detector,channel,supply,type) (e88_power_voltage_set_volts{job=\"pmx\"} and (e88_power_up{job=\"pmx\"} == 1) and on(job,instance) (up{job=\"pmx\"} == 1))"},
+    {"series": "power", "field": "current_set_a", "unit": "A", "expr": "max by (device,detector,channel,supply,type) (e88_power_current_set_amps{job=\"pmx\"} and (e88_power_up{job=\"pmx\"} == 1) and on(job,instance) (up{job=\"pmx\"} == 1))"},
+    {"series": "power", "field": "output_on", "unit": "0=off, 1=on", "expr": "max by (device,detector,channel,supply,type) (e88_power_output_on{job=\"pmx\"} and (e88_power_up{job=\"pmx\"} == 1) and on(job,instance) (up{job=\"pmx\"} == 1))"},
+    {"series": "power", "field": "current_limit_status", "unit": "0=normal, 1=above 80%, 2=above 90%", "expr": "max by (device,detector,channel,supply,type) (((e88_power_current_measured_amps{job=\"pmx\"} > bool (e88_power_current_set_amps{job=\"pmx\"} * 0.8)) + (e88_power_current_measured_amps{job=\"pmx\"} > bool (e88_power_current_set_amps{job=\"pmx\"} * 0.9))) and (e88_power_current_set_amps{job=\"pmx\"} > 0) and (e88_power_current_measured_amps{job=\"pmx\"} >= 0) and (e88_power_up{job=\"pmx\"} == 1) and on(job,instance) (up{job=\"pmx\"} == 1))"},
+    {"series": "power", "field": "read_ok", "unit": "0=failed, 1=ok", "expr": "max by (device,detector,channel,supply,type) (e88_power_up{job=\"pmx\"} and on(job,instance) (up{job=\"pmx\"} == 1))"},
+    {"series": "power", "field": "comm_error", "unit": "0=ok, 1=error", "expr": "max by (device,detector,channel,supply,type) (e88_power_comm_error{job=\"pmx\"} and on(job,instance) (up{job=\"pmx\"} == 1))"},
+    {"series": "power", "field": "last_success_unix_time", "unit": "Unix seconds", "expr": "max by (device,detector,channel,supply,type) ((e88_power_last_success_unixtime{job=\"pmx\"} > 0) and on(job,instance) (up{job=\"pmx\"} == 1))"},
+    {"series": "host", "field": "sampling_ok", "unit": "0=failed, 1=ok", "expr": "up{job=\"e88_host_resources\",instance=\"e88evb01\"}"},
+    {"series": "host", "field": "cpu_count", "unit": "logical CPUs", "expr": "e88_host_cpu_logical{job=\"e88_host_resources\",instance=\"e88evb01\"}"},
+    {"series": "host", "field": "cpu_usage_pct", "unit": "%", "expr": "100 * (1 - avg by (instance) (rate(e88_host_cpu_seconds_total{job=\"e88_host_resources\",instance=\"e88evb01\",mode=\"idle\"}[2m])))"},
+    {"series": "filesystem", "field": "capacity_bytes", "unit": "bytes", "expr": "e88_host_filesystem_size_bytes{job=\"e88_host_resources\",instance=\"e88evb01\"}"},
+    {"series": "filesystem", "field": "used_bytes", "unit": "bytes", "expr": "e88_host_filesystem_used_bytes{job=\"e88_host_resources\",instance=\"e88evb01\"}"},
+    {"series": "filesystem", "field": "available_bytes", "unit": "bytes", "expr": "e88_host_filesystem_available_bytes{job=\"e88_host_resources\",instance=\"e88evb01\"}"},
+    {"series": "filesystem", "field": "usage_pct", "unit": "%", "expr": "100 * e88_host_filesystem_used_bytes{job=\"e88_host_resources\",instance=\"e88evb01\"} / clamp_min((e88_host_filesystem_used_bytes{job=\"e88_host_resources\",instance=\"e88evb01\"} + e88_host_filesystem_available_bytes{job=\"e88_host_resources\",instance=\"e88evb01\"}), 1)"},
+    {"series": "zpool", "field": "capacity_bytes", "unit": "bytes", "expr": "e88_host_zpool_size_bytes{job=\"e88_host_resources\",instance=\"e88evb01\"}"},
+    {"series": "zpool", "field": "used_bytes", "unit": "bytes", "expr": "e88_host_zpool_used_bytes{job=\"e88_host_resources\",instance=\"e88evb01\"}"},
+    {"series": "zpool", "field": "usage_pct", "unit": "%", "expr": "100 * e88_host_zpool_used_bytes{job=\"e88_host_resources\",instance=\"e88evb01\"} / clamp_min(e88_host_zpool_size_bytes{job=\"e88_host_resources\",instance=\"e88evb01\"}, 1)"}
+  ]
+}
